@@ -33,9 +33,9 @@ resource "google_project_iam_member" "vm_sa_monitoring_writer" {
 
 # Workload Identity Pool
 resource "google_iam_workload_identity_pool" "pool" {
-  workload_identity_pool_id = "${var.environment}-pool"
-  display_name              = "${var.environment} Workload Identity Pool"
-  description               = "Workload Identity Pool for ${var.environment} environment"
+  workload_identity_pool_id = "github-pool"
+  display_name              = "github-pool"
+  description               = "GitHub Actions authentication pool"
   project                   = var.project_id
 }
 
@@ -44,8 +44,8 @@ resource "google_iam_workload_identity_pool_provider" "github_provider" {
   count = var.github_repository != "" ? 1 : 0
   
   workload_identity_pool_id          = google_iam_workload_identity_pool.pool.workload_identity_pool_id
-  workload_identity_pool_provider_id = "github-provider"
-  display_name                       = "GitHub Provider"
+  workload_identity_pool_provider_id = "github"
+  display_name                       = "github"
   description                        = "GitHub Actions provider for workload identity"
   project                            = var.project_id
 
@@ -53,7 +53,7 @@ resource "google_iam_workload_identity_pool_provider" "github_provider" {
     "google.subject"       = "assertion.sub"
     "attribute.actor"      = "assertion.actor"
     "attribute.repository" = "assertion.repository"
-    "attribute.ref"        = "assertion.ref"
+    "attribute.aud"        = "assertion.aud"
   }
 
   attribute_condition = "assertion.repository == '${var.github_repository}'"
