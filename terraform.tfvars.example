@@ -1,26 +1,55 @@
-# Copy this file to terraform.tfvars and fill in your values
+# ===================================================================
+# TERRAFORM VARIABLES CONFIGURATION EXAMPLE
+# ===================================================================
+# Copy this file to terraform.tfvars and update with your values
+# DO NOT commit terraform.tfvars to version control (contains sensitive data)
+#
+# Current Project Example: praxis-gear-483220-k4 (successfully deployed)
+# ===================================================================
 
-project_id = "your-gcp-project-id"
-region     = "us-central1"
-zone       = "us-central1-a"
+# ===================================================================
+# PROJECT CONFIGURATION
+# ===================================================================
+project_id = "your-gcp-project-id"           # Replace with your GCP project ID
+region     = "us-central1"                   # GCP region for resources
+zone       = "us-central1-a"                 # GCP zone for VM instances
 
-environment = "dev"
-subnet_cidr = "10.0.1.0/24"
+# ===================================================================
+# ENVIRONMENT CONFIGURATION  
+# ===================================================================
+environment = "dev"                          # Environment name (dev/staging/prod)
+subnet_cidr = "10.0.1.0/24"                 # VPC subnet CIDR range
 
-machine_type = "e2-medium"
-vm_image     = "ubuntu-os-cloud/ubuntu-2204-lts"
-disk_size    = 20
+# ===================================================================
+# COMPUTE CONFIGURATION
+# ===================================================================
+machine_type = "e2-medium"                   # VM instance type (2 vCPUs, 4GB RAM)
+vm_image     = "ubuntu-os-cloud/ubuntu-2204-lts"  # OS image for VM
+disk_size    = 20                            # Boot disk size in GB
 
-ssh_user       = "ubuntu"
-ssh_public_key = "ssh-rsa AAAAB3NzaC1yc2E... your-public-key-here"
+# ===================================================================
+# SSH CONFIGURATION
+# ===================================================================
+ssh_user       = "ubuntu"                    # SSH username for VM access
+ssh_public_key = "ssh-rsa AAAAB3NzaC1yc2E... your-public-key-here"  # Your SSH public key
 
-# For workload identity with GitHub Actions
-github_repository = "your-username/your-repo"
+# ===================================================================
+# WORKLOAD IDENTITY FEDERATION (WIF) CONFIGURATION
+# ===================================================================
+# For GitHub Actions integration (enterprise security best practice)
+github_repository = "your-username/your-repo"  # GitHub repository for WIF
+# Example: "surajkmr39-lang/GCP-Terraform"
 
+# ===================================================================
+# VM STARTUP SCRIPT (Optional)
+# ===================================================================
 startup_script = <<-EOF
 #!/bin/bash
+# Install essential tools
 apt-get update
-apt-get install -y docker.io git curl
+apt-get install -y docker.io git curl wget
+
+# Configure Docker
 systemctl start docker
 systemctl enable docker
 usermod -aG docker ubuntu
@@ -28,4 +57,22 @@ usermod -aG docker ubuntu
 # Install Google Cloud SDK
 curl https://sdk.cloud.google.com | bash
 exec -l $SHELL
+
+# Install additional development tools
+apt-get install -y htop tree vim nano
 EOF
+
+# ===================================================================
+# WORKING EXAMPLE VALUES (Reference Only)
+# ===================================================================
+# project_id = "praxis-gear-483220-k4"
+# region     = "us-central1" 
+# zone       = "us-central1-a"
+# environment = "dev"
+# subnet_cidr = "10.0.1.0/24"
+# machine_type = "e2-medium"
+# vm_image     = "ubuntu-os-cloud/ubuntu-2204-lts"
+# disk_size    = 20
+# ssh_user       = "ubuntu"
+# ssh_public_key = ""
+# github_repository = "surajkmr39-lang/GCP-Terraform"
