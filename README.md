@@ -18,9 +18,11 @@
 
 This project showcases a **fully operational enterprise-grade infrastructure** on Google Cloud Platform, demonstrating advanced Infrastructure as Code practices, security hardening, and cost optimization strategies used in production environments.
 
-**🏆 Unique Feature**: Demonstrates both **local** and **remote** state management approaches:
-- **Development Environment**: Local state with workspaces (currently deployed)
-- **Production Environment**: Remote state with GCS backend (ready to deploy)
+**🏆 Unique Feature**: Demonstrates **Enterprise Multi-Environment Architecture**:
+- **Development Environment**: 10.10.0.0/16 with e2-medium (ready to deploy)
+- **Staging Environment**: 10.20.0.0/16 with e2-standard-2 (ready to deploy)
+- **Production Environment**: 10.30.0.0/16 with e2-standard-4 (ready to deploy)
+- **Remote State Management**: All environments use GCS backend for team collaboration
 
 ### ⚡ Key Highlights
 
@@ -30,30 +32,30 @@ This project showcases a **fully operational enterprise-grade infrastructure** o
 
 **🏗️ Architecture Excellence**
 - Modular Terraform design (4 modules)
-- 15 resources deployed and managed
-- Multi-environment ready structure
-- Infrastructure as Code best practices
+- Multi-environment infrastructure (dev/staging/prod)
+- Enterprise naming conventions
+- Remote state management with GCS
 
 **🔐 Enterprise Security**
 - Workload Identity Federation (keyless auth)
 - Zero stored service account keys
-- Principle of least privilege IAM
-- Network security with private subnets
+- Environment-specific security policies
+- Network isolation with /16 CIDR blocks
 
 </td>
 <td width="50%">
 
 **💰 Cost Optimization**
-- Right-sized resources (~$20/month)
-- Efficient resource allocation
-- Monitoring and cost controls
-- Scalable architecture design
+- Environment-specific resource sizing
+- Development: ~$18-24/month
+- Staging: ~$25-35/month  
+- Production: ~$45-60/month
 
 **🚀 DevOps Integration**
 - GitHub Actions CI/CD pipelines
-- Automated testing and deployment
-- Infrastructure validation
-- **Local & Remote state management**
+- Multi-environment deployment workflows
+- Infrastructure validation and testing
+- **Enterprise state management**
 
 </td>
 </tr>
@@ -69,12 +71,28 @@ graph TB
     LB --> FW[🛡️ Firewall Rules]
     FW --> NAT[🔄 Cloud NAT]
     NAT --> VPC[📡 VPC Network]
-    VPC --> VM[💻 VM Instance<br/>34.173.115.82]
-    VM --> SA[🔐 Service Account]
+    
+    subgraph "Development Environment"
+        VPC --> VM1[� dedvelopment-vm<br/>10.10.0.0/16<br/>e2-medium]
+    end
+    
+    subgraph "Staging Environment"  
+        VPC --> VM2[💻 staging-vm<br/>10.20.0.0/16<br/>e2-standard-2]
+    end
+    
+    subgraph "Production Environment"
+        VPC --> VM3[💻 production-vm<br/>10.30.0.0/16<br/>e2-standard-4]
+    end
+    
+    VM1 --> SA[🔐 Service Account]
+    VM2 --> SA
+    VM3 --> SA
     SA --> WIF[🔑 Workload Identity<br/>github-pool]
     
     style Internet fill:#e1f5fe
-    style VM fill:#c8e6c9
+    style VM1 fill:#c8e6c9
+    style VM2 fill:#fff3e0
+    style VM3 fill:#ffebee
     style SA fill:#fff3e0
     style WIF fill:#fce4ec
 ```
@@ -87,12 +105,14 @@ graph TB
 
 | Component | Resource Type | Configuration | Status |
 |-----------|---------------|---------------|---------|
-| **🌐 Network** | VPC + Subnet | `dev-vpc` • `10.0.1.0/24` | 🟢 Active |
-| **💻 Compute** | VM Instance | `dev-vm` • e2-medium • Ubuntu 22.04 | 🟢 Running |
-| **🛡️ Security** | Firewall Rules | SSH • HTTP/HTTPS • Internal • Health Check | 🟢 Protected |
-| **👤 Identity** | Service Account | `dev-vm-sa@praxis-gear-483220-k4.iam.gserviceaccount.com` | 🟢 Active |
+| **🌐 Network** | VPC + Subnets | Multi-environment • /16 CIDR blocks | 🟢 Ready |
+| **💻 Development** | VM Instance | `development-vm` • e2-medium • 10.10.0.0/16 | 🟡 Ready to Deploy |
+| **� SStaging** | VM Instance | `staging-vm` • e2-standard-2 • 10.20.0.0/16 | � Re ady to Deploy |
+| **�  Production** | VM Instance | `production-vm` • e2-standard-4 • 10.30.0.0/16 | 🟡 Ready to Deploy |
+| **� ️ Security** | Firewall Rules | SSH • HTTP/HTTPS • Internal • Health Check | 🟢 Configured |
+| **� Identityn** | Service Account | Multi-environment service accounts | 🟢 Active |
 | **🔐 WIF** | Identity Pool | `github-pool` for GitHub Actions | 🟢 Configured |
-| **🔄 Networking** | Cloud NAT | Secure outbound internet access | 🟢 Operational |
+| **🔄 Networking** | Cloud NAT | Secure outbound internet access | 🟢 Ready |
 
 </div>
 
@@ -102,11 +122,11 @@ graph TB
 
 | Metric | Value | Description |
 |--------|-------|-------------|
-| **External IP** | `34.173.115.82` | Public endpoint for SSH access |
-| **Internal IP** | `10.0.1.2` | Private network address |
-| **Resources** | `15 active` | Total managed infrastructure components |
-| **Uptime** | `99.9%` | Infrastructure availability |
-| **Cost** | `~$20/month` | Optimized operational cost |
+| **Development** | `10.10.0.0/16` | Development environment CIDR |
+| **Staging** | `10.20.0.0/16` | Staging environment CIDR |
+| **Production** | `10.30.0.0/16` | Production environment CIDR |
+| **State Storage** | `Remote GCS` | Enterprise state management |
+| **Environments** | `3 ready` | Multi-environment architecture |
 
 </div>
 
@@ -120,7 +140,11 @@ graph TB
 ├── terraform.tfvars                  # ⚙️ Current environment variables
 ├── terraform.tfvars.example          # 📋 Example variables file
 ├── Makefile                          # 🔧 Build automation commands
-├── Check-WIF-Status.ps1              # ✅ WIF validation script
+├── Setup-RemoteBackend.ps1            # 🔧 PowerShell remote backend setup
+├── Demo-StateComparison.ps1          # 🎯 Multi-environment demo script
+├── STATE-MANAGEMENT-COMPARISON.md    # 📊 State management comparison
+├── ENTERPRISE-NAMING-CONVENTIONS.md  # 📋 Enterprise naming guide
+├── setup-remote-backend.sh           # 🐧 Bash remote backend setup
 ├── architecture-diagram.py           # 📊 Generate architecture diagram
 ├── gcp-architecture-diagram.png      # 🖼️ Generated architecture diagram
 ├── gcp-architecture-diagram.pdf      # 📄 Architecture diagram (PDF)
@@ -133,8 +157,22 @@ graph TB
 │   ├── security/                     # 🛡️ Firewall rules
 │   ├── iam/                          # 👤 Service accounts, workload identity
 │   └── compute/                      # 💻 VM instances
-├── environments/                     # 🌍 Environment-specific configs
-│   └── dev/terraform.tfvars          # 🔧 Development configuration
+├── environments/                     # 🌍 Multi-environment configurations
+│   ├── dev/                          # 🔧 Development environment
+│   │   ├── main.tf                   # Development Terraform config
+│   │   ├── variables.tf              # Development variables
+│   │   ├── outputs.tf                # Development outputs
+│   │   └── terraform.tfvars          # Development settings (10.10.0.0/16)
+│   ├── staging/                      # 🟡 Staging environment
+│   │   ├── main.tf                   # Staging Terraform config
+│   │   ├── variables.tf              # Staging variables
+│   │   ├── outputs.tf                # Staging outputs
+│   │   └── terraform.tfvars          # Staging settings (10.20.0.0/16)
+│   └── prod/                         # 🔴 Production environment
+│       ├── main.tf                   # Production Terraform config
+│       ├── variables.tf              # Production variables
+│       ├── outputs.tf                # Production outputs
+│       └── terraform.tfvars          # Production settings (10.30.0.0/16)
 ├── labs/                             # 🧪 Authentication practice labs
 │   ├── README.md                     # 📚 Lab overview and instructions
 │   ├── phase-1-adc/                  # 🔑 Application Default Credentials
@@ -202,35 +240,57 @@ gcloud services enable compute.googleapis.com \
 </details>
 
 <details>
-<summary><b>⚡ One-Click Deployment</b></summary>
+<summary><b>⚡ Multi-Environment Deployment</b></summary>
 
-### Clone & Deploy
+### Clone & Setup
 ```bash
 # 1. Clone the repository
 git clone https://github.com/surajkmr39-lang/GCP-Terraform.git
 cd GCP-Terraform
 
-# 2. Configure your environment
-cp terraform.tfvars.example terraform.tfvars
+# 2. Choose your environment
+cd environments/dev     # For development
+cd environments/staging # For staging  
+cd environments/prod    # For production
+
+# 3. Configure your environment
+cp terraform.tfvars terraform.tfvars.local
 # Edit terraform.tfvars with your project details
 
-# 3. Deploy infrastructure
+# 4. Deploy infrastructure
 terraform init
-terraform workspace new dev
 terraform plan
 terraform apply -auto-approve
 ```
 
-### Verify Deployment
+### Environment-Specific Deployment
 ```bash
-# Check deployed resources
+# Development Environment (10.10.0.0/16)
+cd environments/dev
+terraform init
+terraform apply
+
+# Staging Environment (10.20.0.0/16)
+cd environments/staging
+terraform init
+terraform apply
+
+# Production Environment (10.30.0.0/16)
+cd environments/prod
+terraform init
+terraform apply
+```
+
+### Verify Multi-Environment Deployment
+```bash
+# Check deployed resources in each environment
 terraform state list
 
-# Get connection details
+# Get environment-specific outputs
 terraform output
 
-# Connect to your VM
-gcloud compute ssh dev-vm --zone=us-central1-a --project=YOUR_PROJECT_ID
+# Demo script to show all environments
+./Demo-StateComparison.ps1
 ```
 
 </details>
@@ -238,19 +298,43 @@ gcloud compute ssh dev-vm --zone=us-central1-a --project=YOUR_PROJECT_ID
 <details>
 <summary><b>🔧 Advanced Configuration</b></summary>
 
-### Custom VM Configuration
+### Custom Environment Configuration
 ```hcl
-# In terraform.tfvars
-machine_type = "e2-standard-2"    # Upgrade to 2 vCPUs, 8GB RAM
-disk_size    = 50                 # Increase disk to 50GB
-vm_image     = "ubuntu-os-cloud/ubuntu-2204-lts"
+# Development Environment (environments/dev/terraform.tfvars)
+environment = "development"
+subnet_cidr = "10.10.0.0/16"
+machine_type = "e2-medium"
+disk_size = 30
+
+# Staging Environment (environments/staging/terraform.tfvars)
+environment = "staging"
+subnet_cidr = "10.20.0.0/16"
+machine_type = "e2-standard-2"
+disk_size = 50
+
+# Production Environment (environments/prod/terraform.tfvars)
+environment = "production"
+subnet_cidr = "10.30.0.0/16"
+machine_type = "e2-standard-4"
+disk_size = 100
 ```
 
-### Network Customization
+### Enterprise Network Configuration
 ```hcl
-subnet_cidr = "10.1.1.0/24"      # Custom subnet range
-region      = "us-west1"          # Different region
-zone        = "us-west1-a"        # Corresponding zone
+# Development Network
+subnet_cidr = "10.10.0.0/16"     # Development CIDR block
+region      = "us-central1"       # Primary region
+zone        = "us-central1-a"     # Development zone
+
+# Staging Network  
+subnet_cidr = "10.20.0.0/16"     # Staging CIDR block
+region      = "us-central1"       # Primary region
+zone        = "us-central1-c"     # Staging zone
+
+# Production Network
+subnet_cidr = "10.30.0.0/16"     # Production CIDR block
+region      = "us-central1"       # Primary region
+zone        = "us-central1-b"     # Production zone
 ```
 
 ### Security Settings
@@ -328,71 +412,64 @@ Security Layers:
 
 <div align="center">
 
-### 📊 Monthly Cost Breakdown
+### 📊 Multi-Environment Cost Breakdown
 
 </div>
 
 <table align="center">
 <tr>
-<th>Resource</th>
-<th>Specification</th>
+<th>Environment</th>
+<th>VM Specification</th>
 <th>Monthly Cost</th>
-<th>Optimization</th>
+<th>Use Case</th>
 </tr>
 <tr>
-<td>🖥️ <b>VM Instance</b></td>
-<td>e2-medium (2 vCPUs, 4GB RAM)</td>
-<td><b>$13-16</b></td>
-<td>Right-sized for workload</td>
+<td>�  <b>Development</b></td>
+<td>e2-medium (2 vCPUs, 4GB RAM, 30GB)</td>
+<td><b>$18-24</b></td>
+<td>Development & Testing</td>
 </tr>
 <tr>
-<td>💾 <b>Persistent Disk</b></td>
-<td>20GB SSD</td>
-<td><b>$3</b></td>
-<td>Balanced performance/cost</td>
+<td>� <b>Straging</b></td>
+<td>e2-standard-2 (2 vCPUs, 8GB RAM, 50GB)</td>
+<td><b>$25-35</b></td>
+<td>Pre-production Testing</td>
 </tr>
 <tr>
-<td>🌐 <b>External IP</b></td>
-<td>Static IP address</td>
-<td><b>$3</b></td>
-<td>Reserved for stability</td>
-</tr>
-<tr>
-<td>🔄 <b>Cloud NAT</b></td>
-<td>Outbound internet access</td>
-<td><b>$1-2</b></td>
-<td>Usage-based pricing</td>
-</tr>
-<tr>
-<td>📡 <b>Network Egress</b></td>
-<td>Data transfer costs</td>
-<td><b>$1-3</b></td>
-<td>Monitored and controlled</td>
+<td>🔴 <b>Production</b></td>
+<td>e2-standard-4 (4 vCPUs, 16GB RAM, 100GB)</td>
+<td><b>$45-60</b></td>
+<td>Live Production Workloads</td>
 </tr>
 <tr style="background-color: #e8f5e8;">
-<td colspan="2"><b>🎯 Total Monthly Cost</b></td>
-<td><b>$18-24</b></td>
-<td><b>Optimized for development</b></td>
+<td colspan="2"><b>🎯 Total Multi-Environment Cost</b></td>
+<td><b>$88-119/month</b></td>
+<td><b>Complete Enterprise Setup</b></td>
 </tr>
 </table>
 
-### 📈 Cost Optimization Strategies
+### � <Cost Optimization by Environment
 
 <details>
-<summary><b>💡 Additional Cost Savings</b></summary>
+<summary><b>💡 Environment-Specific Savings</b></summary>
 
 ```yaml
-Development Environment:
-  - Preemptible Instances: -60% cost reduction
+Development Environment ($18-24/month):
+  - Right-sized for development workloads
+  - Preemptible instances: -60% cost reduction
   - Auto-shutdown schedules: Save on idle time
-  - Spot instances: For non-critical workloads
   
-Production Environment:
+Staging Environment ($25-35/month):
+  - Production-like sizing for realistic testing
+  - Spot instances: For non-critical testing
+  - Scheduled deployments: Optimize usage windows
+  
+Production Environment ($45-60/month):
   - Committed Use Discounts: -20% to -57% savings
   - Sustained Use Discounts: Automatic savings
   - Resource monitoring: Right-size based on usage
   
-Network Optimization:
+Network Optimization (All Environments):
   - CDN integration: Reduce egress costs
   - Regional placement: Minimize data transfer
   - Compression: Reduce bandwidth usage
@@ -409,18 +486,30 @@ Network Optimization:
 </div>
 
 <details>
-<summary><b>🔍 Infrastructure Inspection</b></summary>
+<summary><b>🔍 Multi-Environment Infrastructure Inspection</b></summary>
 
 ```bash
-# Resource Management
-terraform state list                    # List all managed resources
-terraform output                        # Display resource outputs
-terraform workspace show               # Current workspace
-terraform validate                     # Validate configuration
+# Development Environment
+cd environments/dev
+terraform state list                    # List dev resources
+terraform output                        # Display dev outputs
+terraform validate                     # Validate dev configuration
 
-# GCP Resource Verification
-gcloud compute instances list           # Verify VM instances
-gcloud iam service-accounts list        # Check service accounts
+# Staging Environment
+cd environments/staging
+terraform state list                    # List staging resources
+terraform output                        # Display staging outputs
+terraform validate                     # Validate staging configuration
+
+# Production Environment
+cd environments/prod
+terraform state list                    # List production resources
+terraform output                        # Display production outputs
+terraform validate                     # Validate production configuration
+
+# GCP Resource Verification (All Environments)
+gcloud compute instances list           # Verify all VM instances
+gcloud iam service-accounts list        # Check all service accounts
 gcloud compute networks list            # Verify VPC networks
 gcloud compute firewall-rules list      # Check firewall rules
 ```
@@ -428,42 +517,63 @@ gcloud compute firewall-rules list      # Check firewall rules
 </details>
 
 <details>
-<summary><b>🔧 State Management</b></summary>
+<summary><b>🔧 Enterprise State Management</b></summary>
 
 ```bash
-# Workspace Operations
-terraform workspace list               # Show all workspaces
-terraform workspace select dev        # Switch to dev workspace
-terraform workspace new prod          # Create production workspace
+# Remote State Operations (All Environments)
+terraform init                         # Initialize remote backend
+terraform plan                        # Preview changes
+terraform apply                       # Apply changes
+terraform destroy                     # Destroy infrastructure
 
-# Resource Inspection
+# Environment-Specific State Management
+cd environments/dev && terraform init     # Development state
+cd environments/staging && terraform init # Staging state  
+cd environments/prod && terraform init    # Production state
+
+# State Inspection
 terraform state show module.compute.google_compute_instance.vm
 terraform state show module.iam.google_iam_workload_identity_pool.pool
 terraform state show module.network.google_compute_network.vpc
 
-# State Maintenance
-terraform refresh                      # Update state from real resources
-terraform plan                        # Check for configuration drift
+# Multi-Environment Demo
+./Demo-StateComparison.ps1            # PowerShell demo script
+./setup-remote-backend.sh             # Bash setup script
 ```
 
 </details>
 
 <details>
-<summary><b>🚀 Deployment Operations</b></summary>
+<summary><b>🚀 Multi-Environment Deployment Operations</b></summary>
 
 ```bash
-# Infrastructure Lifecycle
-terraform plan                         # Preview changes
-terraform apply                        # Apply changes
-terraform destroy                      # Destroy infrastructure
+# Development Environment Deployment
+cd environments/dev
+terraform plan                         # Preview dev changes
+terraform apply                        # Deploy dev infrastructure
+terraform destroy                      # Destroy dev infrastructure
+
+# Staging Environment Deployment
+cd environments/staging
+terraform plan                         # Preview staging changes
+terraform apply                        # Deploy staging infrastructure
+terraform destroy                      # Destroy staging infrastructure
+
+# Production Environment Deployment
+cd environments/prod
+terraform plan                         # Preview production changes
+terraform apply                        # Deploy production infrastructure
+terraform destroy                      # Destroy production infrastructure
 
 # Validation & Testing
-terraform fmt                          # Format configuration files
-terraform validate                     # Validate syntax
-python architecture-diagram.py        # Generate architecture diagram
+terraform fmt                          # Format all configuration files
+terraform validate                     # Validate all environments
+python architecture-diagram.py        # Generate updated architecture diagram
 
-# VM Access
-gcloud compute ssh dev-vm --zone=us-central1-a --project=praxis-gear-483220-k4
+# Environment-Specific VM Access
+gcloud compute ssh development-vm --zone=us-central1-a --project=praxis-gear-483220-k4
+gcloud compute ssh staging-vm --zone=us-central1-c --project=praxis-gear-483220-k4
+gcloud compute ssh production-vm --zone=us-central1-b --project=praxis-gear-483220-k4
 ```
 
 </details>
