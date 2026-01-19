@@ -8,9 +8,6 @@
 crash.log
 crash.*.log
 
-# Documentation and internal files (hidden from public view)
-docs/
-
 # IDE files
 .vscode/
 .idea/

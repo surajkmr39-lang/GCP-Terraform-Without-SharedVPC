@@ -21,6 +21,9 @@ env:
   PROJECT_ID: praxis-gear-483220-k4
   TF_VERSION: 1.5.0
   TERRAFORM_DIR: .
+  # Enterprise WIF configuration (shared infrastructure)
+  WIF_PROVIDER: 'projects/251838763754/locations/global/workloadIdentityPools/github-actions-pool/providers/github-actions'
+  WIF_SERVICE_ACCOUNT: 'github-actions-sa@praxis-gear-483220-k4.iam.gserviceaccount.com'
 
 jobs:
   # Job 1: Validate and Lint
@@ -105,8 +108,8 @@ jobs:
     - name: Authenticate to GCP with WIF
       uses: google-github-actions/auth@v2
       with:
-        workload_identity_provider: 'projects/251838763754/locations/global/workloadIdentityPools/github-pool/providers/github'
-        service_account: 'galaxy@praxis-gear-483220-k4.iam.gserviceaccount.com'
+        workload_identity_provider: ${{ env.WIF_PROVIDER }}
+        service_account: ${{ env.WIF_SERVICE_ACCOUNT }}
         
     - name: Set up Cloud SDK
       uses: google-github-actions/setup-gcloud@v2
@@ -116,15 +119,18 @@ jobs:
       with:
         terraform_version: ${{ env.TF_VERSION }}
         
-    - name: Terraform Init
-      run: terraform init
+    - name: Terraform Init (Development)
+      run: |
+        cd environments/dev
+        terraform init
       
-    - name: Terraform Plan
+    - name: Terraform Plan (Development)
       id: plan
       run: |
+        cd environments/dev
         echo "📋 Running Terraform Plan for Development..."
         terraform plan \
-          -var-file="environments/dev/terraform.tfvars" \
+          -var-file="terraform.tfvars" \
           -out=tfplan-dev \
           -no-color | tee plan-output.txt
       continue-on-error: true
@@ -133,7 +139,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: tfplan-dev
-        path: tfplan-dev
+        path: environments/dev/tfplan-dev
         retention-days: 5
         
     - name: Comment PR with Plan
@@ -142,7 +148,7 @@ jobs:
       with:
         script: |
           const fs = require('fs');
-          const plan = fs.readFileSync('plan-output.txt', 'utf8');
+          const plan = fs.readFileSync('environments/dev/plan-output.txt', 'utf8');
           const output = `#### 🏗️ Terraform Plan - Development Environment
           
           **Status**: ${{ steps.plan.outcome }}
@@ -188,8 +194,8 @@ jobs:
     - name: Authenticate to GCP with WIF
       uses: google-github-actions/auth@v2
       with:
-        workload_identity_provider: 'projects/251838763754/locations/global/workloadIdentityPools/github-pool/providers/github'
-        service_account: 'galaxy@praxis-gear-483220-k4.iam.gserviceaccount.com'
+        workload_identity_provider: ${{ env.WIF_PROVIDER }}
+        service_account: ${{ env.WIF_SERVICE_ACCOUNT }}
         
     - name: Set up Cloud SDK
       uses: google-github-actions/setup-gcloud@v2
@@ -199,22 +205,27 @@ jobs:
       with:
         terraform_version: ${{ env.TF_VERSION }}
         
-    - name: Terraform Init
-      run: terraform init
-      
+    - name: Terraform Init (Development)
+      run: |
+        cd environments/dev
+        terraform init
+        
     - name: Download Plan Artifact
       uses: actions/download-artifact@v4
       with:
         name: tfplan-dev
+        path: environments/dev/
         
-    - name: Terraform Apply
+    - name: Terraform Apply (Development)
       run: |
+        cd environments/dev
         echo "🚀 Deploying to Development Environment..."
         terraform apply -auto-approve tfplan-dev
         
     - name: Get Terraform Outputs
       id: outputs
       run: |
+        cd environments/dev
         echo "📊 Infrastructure Outputs:"
         terraform output -json > outputs.json
         cat outputs.json
@@ -223,30 +234,14 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: terraform-outputs-dev
-        path: outputs.json
+        path: environments/dev/outputs.json
         retention-days: 30
-        
-    - name: Deployment Summary
-      run: |
-        echo "## 🎉 Deployment Successful - Development" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "### 📊 Deployment Details" >> $GITHUB_STEP_SUMMARY
-        echo "- **Environment**: Development" >> $GITHUB_STEP_SUMMARY
-        echo "- **Project**: ${{ env.PROJECT_ID }}" >> $GITHUB_STEP_SUMMARY
-        echo "- **Terraform Version**: ${{ env.TF_VERSION }}" >> $GITHUB_STEP_SUMMARY
-        echo "- **Authentication**: Workload Identity Federation (Keyless)" >> $GITHUB_STEP_SUMMARY
-        echo "- **Deployed by**: @${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
-        echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "### 🔗 Quick Links" >> $GITHUB_STEP_SUMMARY
-        echo "- [GCP Console](https://console.cloud.google.com/compute/instances?project=${{ env.PROJECT_ID }})" >> $GITHUB_STEP_SUMMARY
-        echo "- [Cloud Logging](https://console.cloud.google.com/logs?project=${{ env.PROJECT_ID }})" >> $GITHUB_STEP_SUMMARY
 
-  # Job 5: Plan (Production)
-  plan-prod:
-    name: Plan - Production
+  # Job 5: Plan (Staging Environment)
+  plan-staging:
+    name: Plan - Staging
     runs-on: ubuntu-latest
-    needs: [validate, security-scan]
+    needs: [validate, security-scan, deploy-dev]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     
     permissions:
@@ -260,8 +255,8 @@ jobs:
     - name: Authenticate to GCP with WIF
       uses: google-github-actions/auth@v2
       with:
-        workload_identity_provider: 'projects/251838763754/locations/global/workloadIdentityPools/github-pool/providers/github'
-        service_account: 'galaxy@praxis-gear-483220-k4.iam.gserviceaccount.com'
+        workload_identity_provider: ${{ env.WIF_PROVIDER }}
+        service_account: ${{ env.WIF_SERVICE_ACCOUNT }}
         
     - name: Set up Cloud SDK
       uses: google-github-actions/setup-gcloud@v2
@@ -271,14 +266,116 @@ jobs:
       with:
         terraform_version: ${{ env.TF_VERSION }}
         
-    - name: Terraform Init
-      run: terraform init
-      
-    - name: Terraform Plan
+    - name: Terraform Init (Staging)
       run: |
+        cd environments/staging
+        terraform init
+      
+    - name: Terraform Plan (Staging)
+      run: |
+        cd environments/staging
+        echo "📋 Running Terraform Plan for Staging..."
+        terraform plan \
+          -var-file="terraform.tfvars" \
+          -out=tfplan-staging \
+          -no-color
+          
+    - name: Upload Plan Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: tfplan-staging
+        path: environments/staging/tfplan-staging
+        retention-days: 5
+
+  # Job 6: Deploy (Staging Environment)
+  deploy-staging:
+    name: Deploy - Staging
+    runs-on: ubuntu-latest
+    needs: plan-staging
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment:
+      name: staging
+      url: https://console.cloud.google.com/compute/instances?project=praxis-gear-483220-k4
+    
+    permissions:
+      contents: read
+      id-token: write
+      
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+      
+    - name: Authenticate to GCP with WIF
+      uses: google-github-actions/auth@v2
+      with:
+        workload_identity_provider: ${{ env.WIF_PROVIDER }}
+        service_account: ${{ env.WIF_SERVICE_ACCOUNT }}
+        
+    - name: Set up Cloud SDK
+      uses: google-github-actions/setup-gcloud@v2
+      
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: ${{ env.TF_VERSION }}
+        
+    - name: Terraform Init (Staging)
+      run: |
+        cd environments/staging
+        terraform init
+        
+    - name: Download Plan Artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: tfplan-staging
+        path: environments/staging/
+        
+    - name: Terraform Apply (Staging)
+      run: |
+        cd environments/staging
+        echo "🚀 Deploying to Staging Environment..."
+        terraform apply -auto-approve tfplan-staging
+
+  # Job 7: Plan (Production Environment)
+  plan-prod:
+    name: Plan - Production
+    runs-on: ubuntu-latest
+    needs: [validate, security-scan, deploy-staging]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    permissions:
+      contents: read
+      id-token: write
+      
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+      
+    - name: Authenticate to GCP with WIF
+      uses: google-github-actions/auth@v2
+      with:
+        workload_identity_provider: ${{ env.WIF_PROVIDER }}
+        service_account: ${{ env.WIF_SERVICE_ACCOUNT }}
+        
+    - name: Set up Cloud SDK
+      uses: google-github-actions/setup-gcloud@v2
+      
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: ${{ env.TF_VERSION }}
+        
+    - name: Terraform Init (Production)
+      run: |
+        cd environments/prod
+        terraform init
+      
+    - name: Terraform Plan (Production)
+      run: |
+        cd environments/prod
         echo "📋 Running Terraform Plan for Production..."
         terraform plan \
-          -var-file="environments/dev/terraform.tfvars" \
+          -var-file="terraform.tfvars" \
           -out=tfplan-prod \
           -no-color
           
@@ -286,10 +383,10 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: tfplan-prod
-        path: tfplan-prod
+        path: environments/prod/tfplan-prod
         retention-days: 5
 
-  # Job 6: Deploy (Production)
+  # Job 8: Deploy (Production Environment) - WITH APPROVAL GATE
   deploy-prod:
     name: Deploy - Production
     runs-on: ubuntu-latest
@@ -304,14 +401,26 @@ jobs:
       id-token: write
       
     steps:
+    - name: Production Deployment Notice
+      run: |
+        echo "🚨 PRODUCTION DEPLOYMENT STARTING"
+        echo "=================================="
+        echo "Environment: Production"
+        echo "Triggered by: @${{ github.actor }}"
+        echo "Commit: ${{ github.sha }}"
+        echo "Time: $(date)"
+        echo ""
+        echo "⚠️  This deployment will affect production systems!"
+        echo "🔍 Ensure all tests have passed and staging is validated"
+        
     - name: Checkout Code
       uses: actions/checkout@v4
       
     - name: Authenticate to GCP with WIF
       uses: google-github-actions/auth@v2
       with:
-        workload_identity_provider: 'projects/251838763754/locations/global/workloadIdentityPools/github-pool/providers/github'
-        service_account: 'galaxy@praxis-gear-483220-k4.iam.gserviceaccount.com'
+        workload_identity_provider: ${{ env.WIF_PROVIDER }}
+        service_account: ${{ env.WIF_SERVICE_ACCOUNT }}
         
     - name: Set up Cloud SDK
       uses: google-github-actions/setup-gcloud@v2
@@ -321,25 +430,30 @@ jobs:
       with:
         terraform_version: ${{ env.TF_VERSION }}
         
-    - name: Terraform Init
-      run: terraform init
-      
+    - name: Terraform Init (Production)
+      run: |
+        cd environments/prod
+        terraform init
+        
     - name: Download Plan Artifact
       uses: actions/download-artifact@v4
       with:
         name: tfplan-prod
+        path: environments/prod/
         
-    - name: Terraform Apply
+    - name: Terraform Apply (Production)
       run: |
-        echo "🚀 Deploying to Production Environment..."
+        cd environments/prod
+        echo "🏭 Deploying to Production Environment..."
         terraform apply -auto-approve tfplan-prod
         
     - name: Get Terraform Outputs
       run: |
-        echo "📊 Infrastructure Outputs:"
+        cd environments/prod
+        echo "📊 Production Infrastructure Outputs:"
         terraform output
         
-    - name: Deployment Notification
+    - name: Production Deployment Success
       run: |
         echo "## 🎉 Production Deployment Successful" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
@@ -348,18 +462,20 @@ jobs:
         echo "- **Project**: ${{ env.PROJECT_ID }}" >> $GITHUB_STEP_SUMMARY
         echo "- **Deployed by**: @${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
         echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Time**: $(date)" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "### ⚠️ Post-Deployment Tasks" >> $GITHUB_STEP_SUMMARY
-        echo "- [ ] Verify application health" >> $GITHUB_STEP_SUMMARY
+        echo "### ⚠️ Post-Deployment Checklist" >> $GITHUB_STEP_SUMMARY
+        echo "- [ ] Verify application health endpoints" >> $GITHUB_STEP_SUMMARY
         echo "- [ ] Check monitoring dashboards" >> $GITHUB_STEP_SUMMARY
-        echo "- [ ] Review logs for errors" >> $GITHUB_STEP_SUMMARY
-        echo "- [ ] Update documentation if needed" >> $GITHUB_STEP_SUMMARY
+        echo "- [ ] Review error logs" >> $GITHUB_STEP_SUMMARY
+        echo "- [ ] Validate performance metrics" >> $GITHUB_STEP_SUMMARY
+        echo "- [ ] Update runbook documentation" >> $GITHUB_STEP_SUMMARY
 
-  # Job 7: Notify on Failure
+  # Job 9: Notify on Failure
   notify-failure:
     name: Notify on Failure
     runs-on: ubuntu-latest
-    needs: [validate, security-scan, plan-dev, deploy-dev, plan-prod, deploy-prod]
+    needs: [validate, security-scan, plan-dev, deploy-dev, plan-staging, deploy-staging, plan-prod, deploy-prod]
     if: failure()
     
     steps:
@@ -367,9 +483,10 @@ jobs:
       run: |
         echo "## ❌ Pipeline Failed" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "One or more jobs in the pipeline failed." >> $GITHUB_STEP_SUMMARY
+        echo "One or more jobs in the CI/CD pipeline failed." >> $GITHUB_STEP_SUMMARY
         echo "Please check the logs above for details." >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "**Workflow**: ${{ github.workflow }}" >> $GITHUB_STEP_SUMMARY
         echo "**Triggered by**: @${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
         echo "**Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Time**: $(date)" >> $GITHUB_STEP_SUMMARY

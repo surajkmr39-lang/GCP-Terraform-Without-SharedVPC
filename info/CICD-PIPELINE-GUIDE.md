@@ -356,7 +356,7 @@ gcloud compute instances list
 - "Security scanning integrated into the pipeline"
 - "Complete audit trail and monitoring"
 
-## 🏆 **Interview Questions & Answers**
+## 🏆 **Technical Questions & Answers**
 
 ### **Q: "How do you implement CI/CD for infrastructure?"**
 **A:** "I use GitHub Actions with a multi-stage pipeline that includes validation, security scanning, planning, and deployment. The key is treating infrastructure as code with the same rigor as application code - automated testing, code reviews, and controlled deployments with approval gates for production."

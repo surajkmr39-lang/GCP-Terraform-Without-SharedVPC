@@ -430,7 +430,7 @@ gcloud iam service-accounts add-iam-policy-binding \
 | **Enterprise Ready** | ❌ | ❌ | **✅** | ✅ |
 | **Cross-Environment** | ❌ | ⭐ | **✅** | ✅ |
 
-## 🎓 Interview Questions & Answers
+## 🎓 Technical Questions & Answers
 
 **Q: How does service account impersonation work and what are its benefits?**
 

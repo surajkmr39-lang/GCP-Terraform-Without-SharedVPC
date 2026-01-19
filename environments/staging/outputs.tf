@@ -22,9 +22,16 @@ output "compute" {
 output "iam" {
   description = "IAM configuration details"
   value = {
-    service_account_email            = module.iam.vm_service_account_email
-    workload_identity_pool_name      = module.iam.workload_identity_pool_name
-    workload_identity_provider_name  = module.iam.workload_identity_provider_name
+    service_account_email = module.iam.vm_service_account_email
+  }
+}
+
+output "shared_wif" {
+  description = "Shared WIF configuration details"
+  value = {
+    workload_identity_pool_name     = data.terraform_remote_state.shared_wif.outputs.workload_identity_pool_name
+    workload_identity_provider_name = data.terraform_remote_state.shared_wif.outputs.workload_identity_provider_name
+    github_actions_service_account  = data.terraform_remote_state.shared_wif.outputs.github_actions_service_account_email
   }
 }
 

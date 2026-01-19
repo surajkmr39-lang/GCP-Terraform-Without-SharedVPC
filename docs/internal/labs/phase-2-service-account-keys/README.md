@@ -349,7 +349,7 @@ gcloud iam service-accounts keys list \
 | **Expiration** | Never | 1 hour | 1 hour |
 | **Compromise Risk** | High | Low | Very Low |
 
-## 🎓 Interview Questions & Answers
+## 🎓 Technical Questions & Answers
 
 **Q: Why are service account keys considered a security anti-pattern?**
 
@@ -388,7 +388,7 @@ terraform plan -var-file="environments/dev/terraform.tfvars"
 - [ ] Completed security analysis exercise
 - [ ] Simulated key compromise scenario
 - [ ] Understand when keys are/aren't appropriate
-- [ ] Can explain security risks in interview context
+- [ ] Can explain security risks in technical context
 
 ## 🚀 Next Steps
 

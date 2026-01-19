@@ -40,11 +40,11 @@ team        = "platform-engineering"
 cost_center = "engineering-ops"
 
 # ===================================================================
-# SECURITY CONFIGURATION (Production-hardened)
+# SECURITY CONFIGURATION (Production - Highly Restricted)
 # ===================================================================
-ssh_source_ranges = ["0.0.0.0/0"]  # Should be restricted to office/VPN IPs
+ssh_source_ranges = ["203.0.113.0/24", "198.51.100.0/24"]  # Office/VPN networks only
 
 # ===================================================================
 # VM STARTUP SCRIPT (Production)
 # ===================================================================
-startup_script = ""
+startup_script = "../../scripts/production-startup.sh"

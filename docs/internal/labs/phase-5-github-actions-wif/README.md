@@ -502,7 +502,7 @@ You've completed Phase 5 when:
 4. ✅ Can deploy Terraform infrastructure
 5. ✅ See token exchanges in GCP logs
 
-## 🎓 Interview Talking Points
+## 🎓 Technical Talking Points
 
 **Q: "Walk me through your CI/CD setup"**
 

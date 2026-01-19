@@ -40,11 +40,11 @@ team        = "platform-engineering"
 cost_center = "engineering-ops"
 
 # ===================================================================
-# SECURITY CONFIGURATION
+# SECURITY CONFIGURATION (Development - Restricted Access)
 # ===================================================================
-ssh_source_ranges = ["0.0.0.0/0"]  # Restrict in real environments
+ssh_source_ranges = ["10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"]  # Private networks only
 
 # ===================================================================
 # VM STARTUP SCRIPT (Development)
 # ===================================================================
-startup_script = ""
+startup_script = "../../scripts/development-startup.sh"

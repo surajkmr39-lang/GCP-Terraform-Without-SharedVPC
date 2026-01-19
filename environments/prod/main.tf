@@ -4,7 +4,7 @@ terraform {
   required_providers {
     google = {
       source  = "hashicorp/google"
-      version = "~> 5.0"
+      version = "~> 5.45.0"  # Pinned to specific minor version for stability
     }
   }
   
@@ -45,13 +45,23 @@ module "security" {
   tags = local.common_tags
 }
 
+# Get shared WIF configuration
+data "terraform_remote_state" "shared_wif" {
+  backend = "gcs"
+  config = {
+    bucket = "praxis-gear-483220-k4-terraform-state"
+    prefix = "shared/wif/terraform-state"
+  }
+}
+
 # IAM module
 module "iam" {
   source = "../../modules/iam"
 
-  project_id         = var.project_id
-  environment        = var.environment
-  github_repository  = var.github_repository
+  project_id                   = var.project_id
+  environment                  = var.environment
+  github_repository            = var.github_repository
+  workload_identity_pool_name  = data.terraform_remote_state.shared_wif.outputs.workload_identity_pool_name
   
   tags = local.common_tags
 }

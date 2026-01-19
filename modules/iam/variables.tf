@@ -14,6 +14,12 @@ variable "github_repository" {
   default     = ""
 }
 
+variable "workload_identity_pool_name" {
+  description = "Name of the shared workload identity pool"
+  type        = string
+  default     = ""
+}
+
 variable "tags" {
   description = "Common tags to apply to resources"
   type        = map(string)

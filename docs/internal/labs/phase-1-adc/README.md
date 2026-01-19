@@ -322,7 +322,7 @@ PowerShell -ExecutionPolicy Bypass -File labs/phase-1-adc/verify-adc.ps1
 3. **Credential hygiene**: Never commit ADC files to version control
 4. **Monitoring**: Be aware of token expiration times
 
-## 🎓 Interview Questions & Answers
+## 🎓 Technical Questions & Answers
 
 **Q: What is Application Default Credentials and how does it work?**
 
@@ -342,7 +342,7 @@ PowerShell -ExecutionPolicy Bypass -File labs/phase-1-adc/verify-adc.ps1
 - [ ] Successfully run verification script
 - [ ] Troubleshoot at least one ADC issue
 - [ ] Know when to use vs avoid ADC
-- [ ] Can explain ADC in interview context
+- [ ] Can explain ADC in technical context
 
 ## 🚀 Next Steps
 

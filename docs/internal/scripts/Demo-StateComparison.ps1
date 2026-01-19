@@ -47,7 +47,7 @@ Write-Host "- CI/CD ready (all environments)"
 Write-Host "- Disaster recovery (cloud redundancy)"
 Write-Host ""
 
-Write-Host "INTERVIEW DEMONSTRATION:" -ForegroundColor Cyan
+Write-Host "TECHNICAL DEMONSTRATION:" -ForegroundColor Cyan
 Write-Host "This setup shows enterprise-level Terraform knowledge:"
 Write-Host "- Multi-environment architecture (dev/staging/prod)"
 Write-Host "- Remote state management for all environments"
@@ -56,7 +56,7 @@ Write-Host "- Proper separation of concerns"
 Write-Host "- Real-world operational practices"
 Write-Host ""
 
-Write-Host "PERFECT INTERVIEW ANSWER:" -ForegroundColor White
+Write-Host "PERFECT TECHNICAL ANSWER:" -ForegroundColor White
 Write-Host "'In real companies, we use separate directories for each environment"
 Write-Host " with remote state storage for team collaboration. Each environment"
 Write-Host " has its own state file in GCS with proper locking and versioning."
