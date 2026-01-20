@@ -18,6 +18,10 @@ terraform {
 provider "google" {
   project = var.project_id
   region  = var.region
+  
+  # 🔐 PRODUCTION SECURITY: Use service account impersonation
+  # This provides enhanced security and audit trail for production deployments
+  impersonate_service_account = "terraform-prod-sa@praxis-gear-483220-k4.iam.gserviceaccount.com"
 }
 
 # Network module
