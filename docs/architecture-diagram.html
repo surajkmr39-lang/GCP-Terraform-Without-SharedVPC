@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GCP Architecture - Interactive Dashboard</title>
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --bg-color: #f8fafc;
+            --sidebar-bg: rgba(255, 255, 255, 0.95);
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --accent-color: #3b82f6;
+            --border-color: #e2e8f0;
+            --glass: blur(12px);
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        [data-theme="dark"] {
+            --bg-color: #0f172a;
+            --sidebar-bg: rgba(30, 41, 59, 0.95);
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --accent-color: #60a5fa;
+            --border-color: #334155;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            transition: background-color 0.3s ease, color 0.3s ease;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        /* Fullscreen Layout */
+        #diagram-container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+
+        /* Header Controls */
+        .controls {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            background: var(--sidebar-bg);
+            backdrop-filter: var(--glass);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: var(--shadow);
+            transition: all 0.2s;
+            font-size: 1.2rem;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Sidebar */
+        #sidebar {
+            position: fixed;
+            top: 0;
+            right: -400px;
+            width: 380px;
+            height: 100vh;
+            background: var(--sidebar-bg);
+            backdrop-filter: var(--glass);
+            border-left: 1px solid var(--border-color);
+            box-shadow: -4px 0 15px rgba(0, 0, 0, 0.1);
+            transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 900;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #sidebar.open {
+            right: 0;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .sidebar-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .close-btn {
+            cursor: pointer;
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+        }
+
+        .sidebar-content {
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .prop-item {
+            margin-bottom: 15px;
+        }
+
+        .prop-label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 5px;
+        }
+
+        .prop-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.95rem;
+            background: rgba(59, 130, 246, 0.1);
+            padding: 8px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+        }
+
+        .risk-badge {
+            background: #fecaca;
+            color: #991b1b;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            display: inline-block;
+            margin-top: 5px;
+        }
+
+        /* Loading Screen */
+        #loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            transition: opacity 0.5s;
+        }
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid var(--border-color);
+            border-top-color: var(--accent-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        /* Mermaid Overrides for Visibility */
+        .node rect, .node circle, .node polygon {
+            stroke-width: 3px !important;
+        }
+        
+        .nodeLabel {
+            font-size: 24px !important; /* Force larger font */
+            font-weight: bold;
+        }
+        
+        /* Font Awesome icons in nodes */
+        .node i {
+            font-size: 32px !important; /* Bigger icons */
+            margin-bottom: 10px;
+        }
+
+        /* Cluster labels */
+        .cluster-label {
+            font-size: 28px !important;
+            font-weight: 900 !important;
+            fill: var(--text-primary) !important;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="loading">
+        <div class="spinner"></div>
+    </div>
+
+    <div class="controls">
+        <button class="btn" onclick="toggleTheme()" title="Toggle Theme">
+            <i class="fas fa-moon" id="theme-icon"></i>
+        </button>
+        <button class="btn" onclick="resetZoom()" title="Reset View">
+            <i class="fas fa-compress-arrows-alt"></i>
+        </button>
+    </div>
+
+    <div id="diagram-container">
+        <pre class="mermaid">
+            flowchart TB
+            
+            %% Styling Classes
+            classDef default fill:var(--bg-color),stroke:var(--text-primary),stroke-width:2px,color:var(--text-primary);
+            classDef external fill:#f1f5f9,stroke:#64748b,stroke-width:2px,stroke-dasharray: 5 5;
+            classDef cloud fill:#e0f2fe,stroke:#0284c7,stroke-width:3px;
+            classDef network fill:#f0fdf4,stroke:#16a34a,stroke-width:2px;
+            classDef security fill:#fef2f2,stroke:#dc2626,stroke-width:2px;
+            classDef shared fill:#fdf4ff,stroke:#9333ea,stroke-width:2px;
+            
+            subgraph "GitHub Ecosystem"
+                direction TB
+                GHA["<div style='padding:15px; font-size:1.2em'><i class='fab fa-github'></i><br/>GitHub Actions</div>"]:::external
+            end
+
+            subgraph "Google Cloud Platform"
+                direction TB
+                
+                subgraph "Shared Services"
+                    WIF_Pool["<div style='padding:15px; font-size:1.2em'><i class='fas fa-id-badge'></i><br/>Workload Identity</div>"]:::shared
+                    GCS_State["<div style='padding:15px; font-size:1.2em'><i class='fas fa-database'></i><br/>Terraform State</div>"]:::shared
+                end
+
+                subgraph "Environments"
+                    
+                    subgraph "Development (vpc-dev)"
+                        Dev_VPC["<div style='padding:10px'><i class='fas fa-network-wired'></i> VPC Network</div>"]:::network
+                        
+                        subgraph "Subnet: 10.10.0.0/16"
+                            Dev_VM["<div style='padding:15px; font-size:1.2em'><i class='fas fa-server'></i><br/>Dev VM Instance</div>"]:::cloud
+                            Dev_FW["<div style='padding:10px'><i class='fas fa-shield-alt'></i> Firewall Rules</div>"]:::security
+                        end
+                        
+                        Dev_NAT["<div style='padding:10px'><i class='fas fa-globe'></i> Cloud NAT</div>"]:::network
+                    end
+
+                    subgraph "Production (vpc-prod)"
+                        Prod_VPC["<div style='padding:10px'><i class='fas fa-network-wired'></i> VPC Network</div>"]:::network
+                        
+                        subgraph "Subnet: 10.30.0.0/16"
+                            Prod_VM["<div style='padding:15px; font-size:1.2em'><i class='fas fa-server'></i><br/>Prod VM Instance</div>"]:::cloud
+                        end
+                    end
+                end
+            end
+
+            %% Data Flows
+            GHA == "OIDC Token" ==> WIF_Pool
+            WIF_Pool -. "State Locking" .-> GCS_State
+            WIF_Pool -- "Provisioning" --> Dev_VPC
+            WIF_Pool -- "Provisioning" --> Prod_VPC
+            
+            Dev_VM -- "Outbound Traffic" --> Dev_NAT
+
+            %% Click Events
+            click GHA callNodeClick
+            click WIF_Pool callNodeClick
+            click Dev_VM callNodeClick
+            click Dev_FW callNodeClick
+            click Prod_VM callNodeClick
+        </pre>
+    </div>
+
+    <div id="sidebar">
+        <div class="sidebar-header">
+            <span class="sidebar-title">Component Details</span>
+            <i class="fas fa-times close-btn" onclick="closeSidebar()"></i>
+        </div>
+        <div class="sidebar-content" id="sidebar-body">
+            <!-- Dynamic Content -->
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/svg-pan-zoom@3.6.1/dist/svg-pan-zoom.min.js"></script>
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        
+        let panZoomInstance;
+
+        // Configuration
+        const config = {
+            startOnLoad: false,
+            theme: 'base',
+            securityLevel: 'loose',
+            flowchart: { 
+                useMaxWidth: false, 
+                htmlLabels: true,
+                curve: 'basis'
+            }
+        };
+        mermaid.initialize(config);
+
+        // Component Data Store
+        const componentData = {
+            "GHA": {
+                title: "GitHub Actions CI/CD",
+                desc: "Automated pipeline for Terraform deployment.",
+                props: {
+                    "File": ".github/workflows/deploy-infrastructure.yml",
+                    "Trigger": "Push to main / PR",
+                    "Auth": "OIDC (Keyless)"
+                }
+            },
+            "WIF_Pool": {
+                title: "Workload Identity Pool",
+                desc: "Secure authentication bridge between GitHub and GCP.",
+                props: {
+                    "Provider": "projects/1039.../locations/global/workloadIdentityPools/github-pool",
+                    "Service Account": "terraform-sa@...",
+                    "Security": "No Long-Lived Keys"
+                }
+            },
+            "Dev_VM": {
+                title: "Development VM",
+                desc: "Compute instance for development testing.",
+                props: {
+                    "Machine Type": "e2-micro",
+                    "Zone": "us-central1-a",
+                    "IP Address": "Ephemeral Public IP (RISK)"
+                },
+                risk: "Warning: Exposed via Public IP"
+            },
+            "Dev_FW": {
+                title: "Firewall Rules",
+                desc: "Network security controls.",
+                props: {
+                    "Allow": "SSH (22), ICMP",
+                    "Source": "0.0.0.0/0 (Open to World)"
+                },
+                risk: "Security: SSH open to world"
+            },
+            "Prod_VM": {
+                title: "Production VM",
+                desc: "Critical workload instance.",
+                props: {
+                    "Machine Type": "e2-medium",
+                    "Zone": "us-central1-a"
+                }
+            }
+        };
+
+        // Render Diagram
+        window.onload = async () => {
+            try {
+                const element = document.querySelector('.mermaid');
+                const graphDefinition = element.textContent;
+                const { svg } = await mermaid.render('renderGraph', graphDefinition);
+                element.innerHTML = svg;
+                
+                // Initialize Pan/Zoom
+                const svgElement = element.querySelector('svg');
+                svgElement.style.height = '100%';
+                svgElement.style.width = '100%';
+                
+                panZoomInstance = svgPanZoom(svgElement, {
+                    zoomEnabled: true,
+                    controlIconsEnabled: false,
+                    fit: true,
+                    center: true,
+                    minZoom: 0.5,
+                    maxZoom: 10
+                });
+
+                // Initial Zoom Adjustment for Visibility
+                panZoomInstance.zoomBy(1.2);
+
+                document.getElementById('loading').style.opacity = '0';
+                setTimeout(() => document.getElementById('loading').style.display = 'none', 500);
+                document.getElementById('diagram-container').style.opacity = '1';
+
+            } catch (error) {
+                console.error('Mermaid Render Error:', error);
+            }
+        };
+
+        // Click Handler (Global Scope)
+        window.callNodeClick = (nodeId) => {
+            const data = componentData[nodeId];
+            if (!data) return;
+
+            const sidebar = document.getElementById('sidebar');
+            const body = document.getElementById('sidebar-body');
+            
+            let html = `
+                <div style="margin-bottom:20px">
+                    <h3 style="color:var(--accent-color)">${data.title}</h3>
+                    <p style="line-height:1.6">${data.desc}</p>
+                    ${data.risk ? `<div class="risk-badge">${data.risk}</div>` : ''}
+                </div>
+            `;
+
+            if (data.props) {
+                Object.entries(data.props).forEach(([key, value]) => {
+                    html += `
+                        <div class="prop-item">
+                            <div class="prop-label">${key}</div>
+                            <div class="prop-value">${value}</div>
+                        </div>
+                    `;
+                });
+            }
+
+            body.innerHTML = html;
+            sidebar.classList.add('open');
+        };
+
+        // Sidebar Control
+        window.closeSidebar = () => {
+            document.getElementById('sidebar').classList.remove('open');
+        };
+
+        // Zoom Control
+        window.resetZoom = () => {
+            if (panZoomInstance) {
+                panZoomInstance.reset();
+                panZoomInstance.zoomBy(1.2);
+            }
+        };
+
+        // Theme Control
+        window.toggleTheme = () => {
+            const body = document.body;
+            const icon = document.getElementById('theme-icon');
+            
+            if (body.getAttribute('data-theme') === 'dark') {
+                body.removeAttribute('data-theme');
+                icon.classList.remove('fa-sun');
+                icon.classList.add('fa-moon');
+            } else {
+                body.setAttribute('data-theme', 'dark');
+                icon.classList.remove('fa-moon');
+                icon.classList.add('fa-sun');
+            }
+        };
+    </script>
+</body>
+</html>
